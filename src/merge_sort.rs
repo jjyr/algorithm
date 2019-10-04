@@ -2,8 +2,9 @@
 //! sort_inner: recurrently split the list to smaller parts: log(n)O
 //! merge: merge two sub lists from bottom to up: log(n)O
 //!
-//! The total complex is 2log(n)O -> log(n)O
-//! Merge sort use an extra aux list.
+//! Merge sort is stable sorting, use an extra aux list in space complex.
+//! The total time complex is 2log(n)O -> log(n)O
+//! In case all elements is reversed, merge sort is still log(n)O
 
 pub fn merge_sort<E: std::cmp::Ord + Clone>(l: &mut [E]) {
     if l.len() == 1 {
@@ -15,12 +16,18 @@ pub fn merge_sort<E: std::cmp::Ord + Clone>(l: &mut [E]) {
 }
 
 fn sort_inner<E: std::cmp::Ord + Clone>(l: &mut [E], aux: &mut [E], lo: usize, hi: usize) {
+    // sort aux list first, then merge back to l
     if hi <= (lo + 1) {
         return;
     }
     let mid = (lo + hi) / 2;
-    sort_inner(l, aux, lo, mid);
-    sort_inner(l, aux, mid, hi);
+    sort_inner(aux, l, lo, mid);
+    sort_inner(aux, l, mid, hi);
+    // cut off if aux is already merged
+    if aux[mid - 1] < aux[mid] {
+        l[lo..hi].clone_from_slice(&aux[lo..hi]);
+        return;
+    }
     merge(l, aux, lo, mid, hi);
 }
 
@@ -29,7 +36,6 @@ fn merge<E: std::cmp::Ord + Clone>(l: &mut [E], aux: &mut [E], lo: usize, mid: u
     let mut k = mid;
 
     // update aux list, then do merge
-    aux[lo..hi].clone_from_slice(&l[lo..hi]);
 
     for i in lo..hi {
         if j >= mid {
