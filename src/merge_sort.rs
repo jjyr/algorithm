@@ -1,41 +1,44 @@
 //! Merge sort has two steps:
-//! sort_inner: recurrently split the list to smaller parts: log(n)O
-//! merge: merge two sub lists from bottom to up: log(n)O
+//! merge_sort: merge list from bottom to up: log(n) steps
+//! merge: merge two sub lists: n steps
+//! The total time complex is nlog(n)
 //!
-//! Merge sort is stable sorting, use an extra aux list in space complex.
-//! The total time complex is 2log(n)O -> log(n)O
-//! In case all elements is reversed, merge sort is still log(n)O
+//! Merge sort is stable sorting, use an extra aux list in space complex
+//! In case all elements is reversed, merge sort still has nlog(n) complexity
 
-pub fn merge_sort<E: std::cmp::Ord + Clone>(l: &mut [E]) {
+use std::cmp::{min, Ord};
+use std::fmt::Debug;
+
+pub fn merge_sort<E: Ord + Clone + Debug>(l: &mut [E]) {
     if l.len() == 1 {
         return;
     }
     // copy a auxiliary list do merge
     let mut aux = l.to_owned();
-    sort_inner(l, &mut aux, 0, l.len());
+    // merge from bottom to up
+    let mut chunk_size = 1;
+    while chunk_size < l.len() {
+        let mut i = 0;
+        while i < l.len() {
+            merge(
+                l,
+                &mut aux,
+                i,
+                i + chunk_size,
+                min(i + chunk_size * 2, l.len()),
+            );
+            i += chunk_size * 2;
+        }
+        chunk_size *= 2;
+    }
 }
 
-fn sort_inner<E: std::cmp::Ord + Clone>(l: &mut [E], aux: &mut [E], lo: usize, hi: usize) {
-    // sort aux list first, then merge back to l
-    if hi <= (lo + 1) {
-        return;
-    }
-    let mid = (lo + hi) / 2;
-    sort_inner(aux, l, lo, mid);
-    sort_inner(aux, l, mid, hi);
-    // cut off if aux is already merged
-    if aux[mid - 1] < aux[mid] {
-        l[lo..hi].clone_from_slice(&aux[lo..hi]);
-        return;
-    }
-    merge(l, aux, lo, mid, hi);
-}
-
-fn merge<E: std::cmp::Ord + Clone>(l: &mut [E], aux: &mut [E], lo: usize, mid: usize, hi: usize) {
+fn merge<E: Ord + Clone + Debug>(l: &mut [E], aux: &mut [E], lo: usize, mid: usize, hi: usize) {
     let mut j = lo;
     let mut k = mid;
 
     // update aux list, then do merge
+    aux[lo..hi].clone_from_slice(&l[lo..hi]);
 
     for i in lo..hi {
         if j >= mid {
