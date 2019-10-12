@@ -1,5 +1,5 @@
+pub mod llrb_tree;
 pub mod merge_sort;
-pub mod red_black_tree;
 
 pub fn is_sorted<E: std::cmp::Ord>(l: &[E]) -> bool {
     if l.len() == 1 {
