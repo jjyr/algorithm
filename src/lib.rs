@@ -1,3 +1,4 @@
+pub mod binary_heap;
 pub mod llrb_tree;
 pub mod merge_sort;
 
