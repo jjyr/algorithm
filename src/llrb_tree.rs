@@ -1,4 +1,15 @@
 //! Left leaning red black tree
+//! Compare to BST, LLRB always has perfect balance
+//!
+//! The perfect balance is because when insert a new node,
+//! we either put it in a node(which will not cause tree height change),
+//! or split a three node, the "split" actually partition the tree from bottom to up,
+//! so the tree is still balanced.
+//!
+//! Compare to BST, each time insert/delete a node the height will increase, it cause the BST less balanced.
+//!
+//! insert/search/delete O(c log(n)), c due to how we implement it
+//!
 
 use std::cmp::Ordering;
 
@@ -7,7 +18,7 @@ pub const RED: bool = true;
 pub const BLACK: bool = false;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Node<K, V> {
+struct Node<K, V> {
     key: K,
     value: V,
     left: Option<Box<Node<K, V>>>,
@@ -64,18 +75,18 @@ fn flip_colors<K, V>(n: &mut Box<Node<K, V>>) {
     }
 }
 
-/// Put new node into tree
-/// 1. put key to left or right node by compare key with current node key.
+/// insert new node into tree
+/// 1. insert key to left or right node by compare key with current node key.
 /// 2. do recursive until find a none node.
 /// 3. test red black color and do rotations after each insert.
-pub fn put<K: Ord, V>(n: Option<Box<Node<K, V>>>, k: K, v: V) -> Box<Node<K, V>> {
+fn insert<K: Ord, V>(n: Option<Box<Node<K, V>>>, k: K, v: V) -> Box<Node<K, V>> {
     if n.is_none() {
         return Box::new(Node::new(k, v, RED));
     }
     let mut n = n.unwrap();
     match k.cmp(&n.key) {
-        Ordering::Less => n.left = Some(put(n.left.take(), k, v)),
-        Ordering::Greater => n.right = Some(put(n.right.take(), k, v)),
+        Ordering::Less => n.left = Some(insert(n.left.take(), k, v)),
+        Ordering::Greater => n.right = Some(insert(n.right.take(), k, v)),
         Ordering::Equal => n.value = v,
     }
     if !is_red(&n.left) && is_red(&n.right) {
@@ -91,16 +102,36 @@ pub fn put<K: Ord, V>(n: Option<Box<Node<K, V>>>, k: K, v: V) -> Box<Node<K, V>>
 }
 
 /// iterate tree from left to right
-pub fn iter<K, V>(n: &Box<Node<K, V>>) -> Vec<&V> {
+fn iter_sort<K, V>(n: &Box<Node<K, V>>) -> Vec<&V> {
     let mut ret = Vec::new();
     if let Some(ref l) = n.left {
-        ret.extend(iter(l));
+        ret.extend(iter_sort(l));
     }
     ret.push(&n.value);
     if let Some(ref r) = n.right {
-        ret.extend(iter(r));
+        ret.extend(iter_sort(r));
     }
     ret
+}
+
+/// Left leaning red black tree
+pub struct LLRBTree<K, V>(Option<Box<Node<K, V>>>);
+
+impl<K: Ord, V> LLRBTree<K, V> {
+    pub fn new() -> Self {
+        LLRBTree(None)
+    }
+
+    pub fn insert(&mut self, key: K, value: V) {
+        self.0 = Some(insert(self.0.take(), key, value));
+    }
+
+    pub fn to_vec(&self) -> Vec<&V> {
+        match &self.0 {
+            Some(n) => iter_sort(&n),
+            None => Vec::new(),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -110,13 +141,12 @@ mod tests {
 
     #[test]
     fn try_tree_sort() {
-        let mut n = None;
+        let mut tree = LLRBTree::new();
         let list = vec![1, 5, 12, 3, 5, 7, 9, 1, 2, 3, 4, 5];
         for i in list {
-            n = Some(put(n, i, i));
+            tree.insert(i, i);
         }
-        let n = n.unwrap();
-        let sorted_list = iter(&n);
+        let sorted_list = tree.to_vec();
         assert!(is_sorted(&sorted_list));
     }
 
